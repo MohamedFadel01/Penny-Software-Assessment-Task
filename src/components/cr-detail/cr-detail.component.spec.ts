@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { CrDetailComponent } from './cr-detail.component';
 import { SessionService } from '../../session/session.service';
+import { CrApiService } from '../../api/cr-api.service';
 import { users } from '../../api/fixtures';
 import { ReqUser } from '../../models/cr.models';
 
@@ -30,6 +31,20 @@ function timelineTimes(fixture: ComponentFixture<CrDetailComponent>): string[] {
 	return Array.from(fixture.nativeElement.querySelectorAll('.cr-timeline__at') as NodeListOf<HTMLElement>).map(
 		(el) => el.textContent?.trim() ?? '',
 	);
+}
+
+function statusText(fixture: ComponentFixture<CrDetailComponent>): string {
+	return fixture.nativeElement.querySelector('.cr-status')?.textContent?.trim() ?? '';
+}
+
+function clickApprove(fixture: ComponentFixture<CrDetailComponent>): void {
+	fixture.nativeElement.querySelector('.cr-actions__approve').click();
+	fixture.detectChanges();
+}
+
+function clickReject(fixture: ComponentFixture<CrDetailComponent>): void {
+	fixture.nativeElement.querySelector('.cr-actions__reject-btn').click();
+	fixture.detectChanges();
 }
 
 describe('CrDetailComponent', () => {
@@ -89,5 +104,92 @@ describe('CrDetailComponent', () => {
 	it('renders a single-entry timeline for CR-3', async () => {
 		const fixture = await render(users.approver, 'CR-3');
 		expect(timelineActions(fixture)).toEqual(['CREATE']);
+	});
+
+	it('approves a pending CR and refreshes the view', async () => {
+		const fixture = await render(users.approver, 'CR-1');
+		clickApprove(fixture);
+		await flush();
+		fixture.detectChanges();
+		expect(statusText(fixture)).toBe('APPROVED');
+		expect(fixture.nativeElement.querySelector('.cr-actions__approve').disabled).toBe(true);
+		expect(fixture.nativeElement.querySelector('.cr-actions__reject')).toBeNull();
+		expect(timelineActions(fixture)).toEqual(['CREATE', 'SUBMIT', 'SEND_FOR_APPROVAL', 'APPROVE']);
+		expect(fixture.nativeElement.querySelector('.cr-actions__error')).toBeNull();
+	});
+
+	it('disables Approve while the request is in flight', async () => {
+		const fixture = await render(users.approver, 'CR-1');
+		clickApprove(fixture);
+		expect(fixture.nativeElement.querySelector('.cr-actions__approve').disabled).toBe(true);
+		await flush();
+		fixture.detectChanges();
+	});
+
+	it('does not send a second Approve while one is in flight', async () => {
+		const fixture = await render(users.approver, 'CR-1');
+		const approve = jest.spyOn(TestBed.inject(CrApiService), 'approve');
+		clickApprove(fixture);
+		clickApprove(fixture);
+		await flush();
+		fixture.detectChanges();
+		expect(approve).toHaveBeenCalledTimes(1);
+	});
+
+	it('keeps the loaded CR and shows an error when Approve fails', async () => {
+		const fixture = await render(users.approver, 'CR-1');
+		TestBed.inject(CrApiService).failNext = true;
+		clickApprove(fixture);
+		await flush();
+		fixture.detectChanges();
+		expect(statusText(fixture)).toBe('PENDING_APPROVAL');
+		expect(fixture.nativeElement.querySelector('.cr-detail__header h2').textContent).toContain('Add 1 unit of SKU-A');
+		expect(fixture.nativeElement.querySelector('.cr-detail__error')).toBeNull();
+		const error = fixture.nativeElement.querySelector('.cr-actions__error');
+		expect(error).not.toBeNull();
+		expect(error.textContent).toContain('Network error');
+		expect(fixture.nativeElement.querySelector('.cr-actions__approve').disabled).toBe(false);
+	});
+
+	it('allows Approve to be retried after a failed request', async () => {
+		const fixture = await render(users.approver, 'CR-1');
+		TestBed.inject(CrApiService).failNext = true;
+		clickApprove(fixture);
+		await flush();
+		fixture.detectChanges();
+		clickApprove(fixture);
+		await flush();
+		fixture.detectChanges();
+		expect(statusText(fixture)).toBe('APPROVED');
+		expect(fixture.nativeElement.querySelector('.cr-actions__error')).toBeNull();
+	});
+
+	it('rejects a pending CR with a reason and refreshes the view', async () => {
+		const fixture = await render(users.approver, 'CR-1');
+		fixture.componentInstance.rejectControl.setValue('Price increase is not justified');
+		fixture.detectChanges();
+		clickReject(fixture);
+		await flush();
+		fixture.detectChanges();
+		expect(statusText(fixture)).toBe('REJECTED');
+		expect(fixture.nativeElement.querySelector('.cr-actions__reject')).toBeNull();
+		expect(fixture.nativeElement.querySelector('.cr-actions__approve').disabled).toBe(true);
+		expect(timelineActions(fixture)).toEqual(['CREATE', 'SUBMIT', 'SEND_FOR_APPROVAL', 'REJECT']);
+	});
+
+	it('keeps the loaded CR and shows an error when Reject fails', async () => {
+		const fixture = await render(users.approver, 'CR-1');
+		fixture.componentInstance.rejectControl.setValue('Price increase is not justified');
+		fixture.detectChanges();
+		TestBed.inject(CrApiService).failNext = true;
+		clickReject(fixture);
+		await flush();
+		fixture.detectChanges();
+		expect(statusText(fixture)).toBe('PENDING_APPROVAL');
+		expect(fixture.nativeElement.querySelector('.cr-detail__error')).toBeNull();
+		const error = fixture.nativeElement.querySelector('.cr-actions__error');
+		expect(error).not.toBeNull();
+		expect(error.textContent).toContain('Network error');
+		expect(fixture.nativeElement.querySelector('.cr-actions__reject')).not.toBeNull();
 	});
 });
