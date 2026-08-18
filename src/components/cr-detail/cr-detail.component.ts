@@ -65,7 +65,7 @@ export class CrDetailComponent implements OnInit {
 	}
 
 	get canReject(): boolean {
-		return this.detail?.status === 'PENDING_APPROVAL';
+		return this.canApprove;
 	}
 
 	fmt(amount: number): string {
