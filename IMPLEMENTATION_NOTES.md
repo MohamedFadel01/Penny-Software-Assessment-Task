@@ -12,7 +12,13 @@
 <!-- The screens, the view-state each component exposes, and how data flows from the mock API into the
 template. -->
 
--
+- The app has two sides: a list of change requests for the signed-in user’s company, and a detail page for one request.
+- The list tracks idle / loading / loaded / empty / error, and it has a status dropdown, but that filter is not working yet, changing it still shows every row.
+- The detail page uses the same loading/error idea, then shows line-item changes, history, and Approve/Reject.
+- The timeline looks reversed.
+- Approve and Reject do not work. The buttons only look at status, not the user’s permissions.
+- The selected row in the CR list does not show up in the detail view, it stays fixed on one CR even after I click another row.
+- The layout is very tight: no real visual separator or enough space between the two views.
 
 ## 3. Invariants I keep
 <!-- Which properties the UI guarantees, and where in the component/template each is enforced. -->
