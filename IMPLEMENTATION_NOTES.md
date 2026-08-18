@@ -6,7 +6,9 @@
 ## 1. What I changed
 <!-- Grouped by task: bugs fixed and features implemented (component + template). -->
 
--
+- Task 1
+  - Diff: `computeDiff` only compared unit price, so a quantity-only change (CR-1: SKU-A 10 → 11) was marked `unchanged`. I also compare quantity and description, so a line is `changed` if any of those fields differ.
+  - Approve permission: `canApprove` only checked that the CR is `PENDING_APPROVAL`, so a read-only viewer still got an enabled Approve button. I also require the current user to have the `cr_a_o` policy. Approvers can still approve pending CRs; viewers cannot.
 
 ## 2. Component & state model
 <!-- The screens, the view-state each component exposes, and how data flows from the mock API into the
@@ -25,6 +27,8 @@ template. -->
 
 | Invariant | How / where |
 |---|---|
+| If quantity, price, or description changes, the preview must say `changed`, not `unchanged` | `computeDiff` in `diff.util.ts` |
+| A user who cannot approve must not get an enabled Approve button, even if the CR is pending | `canApprove` in `cr-detail.component.ts` (status is `PENDING_APPROVAL` **and** user has `cr_a_o`); the button uses `[disabled]="!canApprove"` |
 
 ## 4. Testing strategy
 <!-- What you tested (component/DOM vs pure) and why; what you deliberately skipped given the budget. -->
