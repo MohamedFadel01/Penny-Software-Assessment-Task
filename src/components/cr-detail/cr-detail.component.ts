@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CrApiService } from '../../api/cr-api.service';
 import { SessionService } from '../../session/session.service';
 import { CrDetail, TimelineEntry } from '../../models/cr.models';
@@ -26,8 +26,7 @@ export class CrDetailComponent implements OnInit {
 	state: ViewState<CrDetail> = idle();
 	submitting = false;
 	actionError?: string;
-	// TODO: add validation so the form is invalid until a reason is entered.
-	rejectControl = new FormControl('', { nonNullable: true });
+	rejectControl = new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.pattern(/\S/)] });
 
 	constructor(private readonly api: CrApiService, private readonly session: SessionService) {}
 
@@ -91,7 +90,7 @@ export class CrDetailComponent implements OnInit {
 	}
 
 	async reject(): Promise<void> {
-		if (!this.canReject || this.submitting) {
+		if (!this.canReject || this.submitting || this.rejectControl.invalid) {
 			return;
 		}
 		this.submitting = true;
