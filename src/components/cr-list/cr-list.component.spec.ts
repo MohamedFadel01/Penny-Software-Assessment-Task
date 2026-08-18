@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { CrListComponent } from './cr-list.component';
 import { SessionService } from '../../session/session.service';
 import { users } from '../../api/fixtures';
-import { ReqUser } from '../../models/cr.models';
+import { CrStatus, ReqUser } from '../../models/cr.models';
 
 const flush = () => new Promise((r) => setTimeout(r, 0));
 
@@ -19,6 +19,19 @@ async function render(user: ReqUser): Promise<ComponentFixture<CrListComponent>>
 	return fixture;
 }
 
+function rowIds(fixture: ComponentFixture<CrListComponent>): string[] {
+	return Array.from(fixture.nativeElement.querySelectorAll('.cr-list__row') as NodeListOf<HTMLTableRowElement>).map(
+		(row) => row.querySelector('td')?.textContent?.trim() ?? '',
+	);
+}
+
+function setStatusFilter(fixture: ComponentFixture<CrListComponent>, value: CrStatus | 'ALL'): void {
+	const select: HTMLSelectElement = fixture.nativeElement.querySelector('.cr-list__filter');
+	select.value = value;
+	select.dispatchEvent(new Event('change'));
+	fixture.detectChanges();
+}
+
 describe('CrListComponent', () => {
 	it('renders a row per change request in the user org', async () => {
 		const fixture = await render(users.approver);
@@ -30,4 +43,34 @@ describe('CrListComponent', () => {
 		expect(fixture.nativeElement.querySelector('.cr-list__empty')).not.toBeNull();
 		expect(fixture.nativeElement.querySelector('.cr-list__table')).toBeNull();
 	});
+
+	it('shows every org row when the status filter is ALL', async () => {
+		const fixture = await render(users.approver);
+		setStatusFilter(fixture, 'DRAFT');
+		setStatusFilter(fixture, 'ALL');
+		expect(rowIds(fixture)).toEqual(['CR-1', 'CR-2', 'CR-3']);
+	});
+
+	it.each<[CrStatus, string[]]>([
+		['PENDING_APPROVAL', ['CR-1']],
+		['APPLIED', ['CR-2']],
+		['DRAFT', ['CR-3']],
+	])('narrows the table to %s rows', async (status, expectedIds) => {
+		const fixture = await render(users.approver);
+		setStatusFilter(fixture, status);
+		expect(rowIds(fixture)).toEqual(expectedIds);
+		expect(fixture.nativeElement.querySelector('.cr-list__table')).not.toBeNull();
+		expect(fixture.nativeElement.querySelector('.cr-list__empty')).toBeNull();
+	});
+
+	it.each<CrStatus>(['SUBMITTED', 'APPROVED', 'REJECTED', 'CANCELLED'])(
+		'shows an empty table (not the org-empty message) when no rows match %s',
+		async (status) => {
+			const fixture = await render(users.approver);
+			setStatusFilter(fixture, status);
+			expect(rowIds(fixture)).toEqual([]);
+			expect(fixture.nativeElement.querySelector('.cr-list__table')).not.toBeNull();
+			expect(fixture.nativeElement.querySelector('.cr-list__empty')).toBeNull();
+		},
+	);
 });
