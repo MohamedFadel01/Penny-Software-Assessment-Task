@@ -44,6 +44,33 @@ describe('CrDetailComponent', () => {
 		expect(approveBtn.disabled).toBe(true);
 	});
 
+	it('hides Reject for a read-only viewer on a pending CR', async () => {
+		const fixture = await render(users.viewer, 'CR-1');
+		expect(fixture.nativeElement.querySelector('.cr-actions__reject')).toBeNull();
+		expect(fixture.nativeElement.querySelector('.cr-actions__reject-btn')).toBeNull();
+	});
+
+	it('still shows CR data to a read-only viewer', async () => {
+		const fixture = await render(users.viewer, 'CR-1');
+		expect(fixture.nativeElement.querySelector('.cr-detail__header h2').textContent).toContain('Add 1 unit of SKU-A');
+	});
+
+	it('offers Approve and Reject to an approver on a pending CR', async () => {
+		const fixture = await render(users.approver, 'CR-1');
+		const approveBtn: HTMLButtonElement = fixture.nativeElement.querySelector('.cr-actions__approve');
+		expect(approveBtn.disabled).toBe(false);
+		expect(fixture.nativeElement.querySelector('.cr-actions__reject')).not.toBeNull();
+		const rejectBtn: HTMLButtonElement = fixture.nativeElement.querySelector('.cr-actions__reject-btn');
+		expect(rejectBtn).not.toBeNull();
+	});
+
+	it.each(['CR-2', 'CR-3'])('does not offer actions to an approver when the CR is not pending (%s)', async (id) => {
+		const fixture = await render(users.approver, id);
+		const approveBtn: HTMLButtonElement = fixture.nativeElement.querySelector('.cr-actions__approve');
+		expect(approveBtn.disabled).toBe(true);
+		expect(fixture.nativeElement.querySelector('.cr-actions__reject')).toBeNull();
+	});
+
 	it('renders CR-1 timeline oldest-first', async () => {
 		const fixture = await render(users.approver, 'CR-1');
 		expect(timelineActions(fixture)).toEqual(['CREATE', 'SUBMIT', 'SEND_FOR_APPROVAL']);
