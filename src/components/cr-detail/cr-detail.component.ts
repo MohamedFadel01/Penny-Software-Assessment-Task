@@ -1,4 +1,4 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { CrApiService } from '../../api/cr-api.service';
@@ -21,6 +21,7 @@ import { formatMoney } from '../../common/money.util';
 })
 export class CrDetailComponent implements OnInit {
 	@Input() id!: string;
+	@Output() updated = new EventEmitter<void>();
 
 	state: ViewState<CrDetail> = idle();
 	submitting = false;
@@ -73,13 +74,36 @@ export class CrDetailComponent implements OnInit {
 	}
 
 	async approve(): Promise<void> {
-		// TODO: perform the approve action through the API and reflect the outcome in the view.
-		throw new Error('approve() not implemented');
+		if (!this.canApprove || this.submitting) {
+			return;
+		}
+		this.submitting = true;
+		this.actionError = undefined;
+		try {
+			const detail = await this.api.approve(this.session.user, this.id, new Date().toISOString());
+			this.state = { status: 'loaded', data: detail };
+			this.updated.emit();
+		} catch (err) {
+			this.actionError = (err as Error).message;
+		} finally {
+			this.submitting = false;
+		}
 	}
 
 	async reject(): Promise<void> {
-		// TODO: require a valid rejectControl, then perform the reject action through the API and
-		//       reflect the outcome in the view.
-		throw new Error('reject() not implemented');
+		if (!this.canReject || this.submitting) {
+			return;
+		}
+		this.submitting = true;
+		this.actionError = undefined;
+		try {
+			const detail = await this.api.reject(this.session.user, this.id, new Date().toISOString(), this.rejectControl.value);
+			this.state = { status: 'loaded', data: detail };
+			this.updated.emit();
+		} catch (err) {
+			this.actionError = (err as Error).message;
+		} finally {
+			this.submitting = false;
+		}
 	}
 }
