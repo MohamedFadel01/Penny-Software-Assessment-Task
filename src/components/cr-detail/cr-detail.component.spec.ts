@@ -225,4 +225,45 @@ describe('CrDetailComponent', () => {
 		fixture.detectChanges();
 		expect(updated).toHaveBeenCalledTimes(1);
 	});
+
+	it('disables Reject when the reason is empty', async () => {
+		const fixture = await render(users.approver, 'CR-1');
+		expect(fixture.nativeElement.querySelector('.cr-actions__reject-btn').disabled).toBe(true);
+		expect(fixture.nativeElement.querySelector('.cr-actions__reason-error')).toBeNull();
+	});
+
+	it('shows a reason error after the empty field is touched', async () => {
+		const fixture = await render(users.approver, 'CR-1');
+		fixture.componentInstance.rejectControl.markAsTouched();
+		fixture.detectChanges();
+		const error = fixture.nativeElement.querySelector('.cr-actions__reason-error');
+		expect(error).not.toBeNull();
+		expect(error.textContent).toContain('Please enter a reason.');
+	});
+
+	it('enables Reject and hides the reason error after a reason is entered', async () => {
+		const fixture = await render(users.approver, 'CR-1');
+		fixture.componentInstance.rejectControl.markAsTouched();
+		fixture.componentInstance.rejectControl.setValue('Price increase is not justified');
+		fixture.detectChanges();
+		expect(fixture.nativeElement.querySelector('.cr-actions__reason-error')).toBeNull();
+		expect(fixture.nativeElement.querySelector('.cr-actions__reject-btn').disabled).toBe(false);
+	});
+
+	it('treats a whitespace-only reason as invalid', async () => {
+		const fixture = await render(users.approver, 'CR-1');
+		fixture.componentInstance.rejectControl.setValue('   ');
+		fixture.componentInstance.rejectControl.markAsTouched();
+		fixture.detectChanges();
+		expect(fixture.nativeElement.querySelector('.cr-actions__reject-btn').disabled).toBe(true);
+		expect(fixture.nativeElement.querySelector('.cr-actions__reason-error')).not.toBeNull();
+	});
+
+	it('does not call the API when Reject is invoked with an empty reason', async () => {
+		const fixture = await render(users.approver, 'CR-1');
+		const reject = jest.spyOn(TestBed.inject(CrApiService), 'reject');
+		await fixture.componentInstance.reject();
+		expect(reject).not.toHaveBeenCalled();
+		expect(statusText(fixture)).toBe('PENDING_APPROVAL');
+	});
 });
