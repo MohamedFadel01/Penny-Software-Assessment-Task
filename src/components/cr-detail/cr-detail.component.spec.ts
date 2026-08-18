@@ -192,4 +192,37 @@ describe('CrDetailComponent', () => {
 		expect(error.textContent).toContain('Network error');
 		expect(fixture.nativeElement.querySelector('.cr-actions__reject')).not.toBeNull();
 	});
+
+	it('emits updated after a successful approve', async () => {
+		const fixture = await render(users.approver, 'CR-1');
+		const updated = jest.fn();
+		fixture.componentInstance.updated.subscribe(updated);
+		clickApprove(fixture);
+		await flush();
+		fixture.detectChanges();
+		expect(updated).toHaveBeenCalledTimes(1);
+	});
+
+	it('does not emit updated when Approve fails', async () => {
+		const fixture = await render(users.approver, 'CR-1');
+		const updated = jest.fn();
+		fixture.componentInstance.updated.subscribe(updated);
+		TestBed.inject(CrApiService).failNext = true;
+		clickApprove(fixture);
+		await flush();
+		fixture.detectChanges();
+		expect(updated).not.toHaveBeenCalled();
+	});
+
+	it('emits updated after a successful reject', async () => {
+		const fixture = await render(users.approver, 'CR-1');
+		const updated = jest.fn();
+		fixture.componentInstance.updated.subscribe(updated);
+		fixture.componentInstance.rejectControl.setValue('Price increase is not justified');
+		fixture.detectChanges();
+		clickReject(fixture);
+		await flush();
+		fixture.detectChanges();
+		expect(updated).toHaveBeenCalledTimes(1);
+	});
 });

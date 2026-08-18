@@ -40,6 +40,13 @@ function setStatusFilter(fixture: ComponentFixture<CrListComponent>, value: CrSt
 	fixture.detectChanges();
 }
 
+function statusById(fixture: ComponentFixture<CrListComponent>, id: string): string {
+	const row = Array.from(fixture.nativeElement.querySelectorAll('.cr-list__row') as NodeListOf<HTMLTableRowElement>).find(
+		(r) => r.querySelector('td')?.textContent?.trim() === id,
+	);
+	return row?.querySelector('.cr-status')?.textContent?.trim() ?? '';
+}
+
 describe('CrListComponent', () => {
 	it('renders a row per change request in the user org', async () => {
 		const fixture = await render(users.approver);
@@ -116,4 +123,13 @@ describe('CrListComponent', () => {
 			expect(fixture.nativeElement.querySelector('.cr-list__empty')).toBeNull();
 		},
 	);
+
+	it('shows the new status after load when the API store changed', async () => {
+		const fixture = await render(users.approver);
+		expect(statusById(fixture, 'CR-1')).toBe('PENDING_APPROVAL');
+		await TestBed.inject(CrApiService).approve(users.approver, 'CR-1', '2026-03-02T12:00:00.000Z');
+		await fixture.componentInstance.load();
+		fixture.detectChanges();
+		expect(statusById(fixture, 'CR-1')).toBe('APPROVED');
+	});
 });
