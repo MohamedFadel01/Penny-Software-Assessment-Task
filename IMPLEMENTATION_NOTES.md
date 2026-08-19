@@ -79,7 +79,8 @@ template. -->
 - Switching user clears the selected CR first (so another org never reuses CR-1), then auto-selects the first row after that org’s list loads. An empty org stays with no detail.
 
 ## 6. Where I used AI
--
+I used Cursor for the whole exercise: reading the scaffold, writing tests first, implementing the list/detail/shell changes, and drafting these notes.
+
 
 ## 7. What I'd improve with more time
 - A bit more space / a divider between the two panes (visual polish was out of scope).
