@@ -53,6 +53,16 @@ describe('CrListComponent', () => {
 		expect(fixture.nativeElement.querySelectorAll('.cr-list__row').length).toBe(3); // org-alpha: CR-1, CR-2, CR-3
 	});
 
+	it('marks the selected row', async () => {
+		const fixture = await render(users.approver);
+		fixture.componentInstance.selectedId = 'CR-2';
+		fixture.detectChanges();
+		const rows = Array.from(fixture.nativeElement.querySelectorAll('.cr-list__row') as NodeListOf<HTMLTableRowElement>);
+		expect(rows[0].classList.contains('cr-list__row--selected')).toBe(false);
+		expect(rows[1].classList.contains('cr-list__row--selected')).toBe(true);
+		expect(rows[2].classList.contains('cr-list__row--selected')).toBe(false);
+	});
+
 	it('emits loaded with the org rows after a successful load', async () => {
 		const fixture = await createList(users.approver);
 		const loaded = jest.fn();

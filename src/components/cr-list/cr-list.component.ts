@@ -1,4 +1,4 @@
-import { Component, EventEmitter, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CrApiService } from '../../api/cr-api.service';
 import { SessionService } from '../../session/session.service';
@@ -17,6 +17,7 @@ import { idle, loading, ViewState } from '../../common/view-state';
 	templateUrl: './cr-list.component.html',
 })
 export class CrListComponent implements OnInit {
+	@Input() selectedId: string | null = null;
 	@Output() select = new EventEmitter<string>();
 	@Output() loaded = new EventEmitter<CrSummary[]>();
 

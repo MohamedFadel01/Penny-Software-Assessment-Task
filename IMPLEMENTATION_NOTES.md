@@ -23,6 +23,8 @@
   - I kept Approve visible but disabled for a viewer (the original test checks `.disabled`). Reject stays hidden.
   - Selecting a list row now reloads detail: `ngOnChanges` on `id` calls `load()`.
   - Switching “Acting as” clears `selectedId` so we do not keep CR-1 after changing org (that used to show Not found). After the new list loads, the shell selects the first row and opens its detail.
+- Visual polish
+  - Cards, spacing, status pills, selected-row highlight, and a placeholder when no CR is selected. Existing test class names are unchanged.
 
 ## 2. Component & state model
 <!-- The screens, the view-state each component exposes, and how data flows from the mock API into the
@@ -35,7 +37,6 @@ template. -->
 - After a successful action, detail emits `updated` so the list reloads from the same mock API store.
 - Changing the selected list row updates `[id]`; detail reloads that CR in `ngOnChanges`.
 - Switching user clears the selected CR so detail does not keep an id from another org, then selects the first row of the new list.
-- The layout is very tight: no real visual separator or enough space between the two views.
 
 ## 3. Invariants I keep
 <!-- Which properties the UI guarantees, and where in the component/template each is enforced. -->
@@ -76,13 +77,12 @@ template. -->
 - I left Approve in the DOM (disabled) because the original test checks `.cr-actions__approve.disabled`. Reject is hidden because the template already used `*ngIf`.
 - Totals/delta come from the API CR fields; I did not recompute them from line items.
 - Reloading the list after success uses the existing `load()` (including its loading state), so the table can flash “Loading…” briefly.
-- Switching user clears the selected CR first (so another org never reuses CR-1), then auto-selects the first row after that org’s list loads. An empty org stays with no detail.
+- Visual polish: cards, more space between the list and detail panes, status pills, and a highlight on the selected list row. Class names used by tests did not change.
 
 ## 6. Where I used AI
 I used Cursor for the whole exercise: reading the scaffold, writing tests first, implementing the list/detail/shell changes, and drafting these notes.
 
 
 ## 7. What I'd improve with more time
-- A bit more space / a divider between the two panes (visual polish was out of scope).
 - Use `canApprovePolicy` so user/workspace approve scopes work, not only `cr_a_o`.
 - Refresh the list without flipping back through the loading state.

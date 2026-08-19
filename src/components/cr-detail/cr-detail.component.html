@@ -8,8 +8,10 @@
 
 	<ng-container *ngIf="state.status === 'loaded' && detail as cr">
 		<header class="cr-detail__header">
-			<h2>{{ cr.title }}</h2>
-			<span class="cr-status" [attr.data-status]="cr.status">{{ cr.status }}</span>
+			<div class="cr-detail__title-row">
+				<h2>{{ cr.title }}</h2>
+				<span class="cr-status" [attr.data-status]="cr.status">{{ cr.status }}</span>
+			</div>
 			<p class="cr-detail__totals">
 				{{ fmt(cr.baselineTotal) }} → {{ fmt(cr.newTotal) }}
 				<strong class="cr-detail__delta">(Δ {{ fmt(cr.delta) }})</strong>
