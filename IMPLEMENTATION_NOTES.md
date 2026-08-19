@@ -18,6 +18,11 @@
   - Actions: `approve()` / `reject()` call the mock API with `submitting` and `actionError`. On success, `state` is replaced with the returned CR. On failure, the loaded CR stays and `.cr-actions__error` shows the message. A second click is ignored while `submitting` is true.
   - List refresh: after a successful action, detail emits `updated` and the shell calls `list.load()`, so the table status updates. Failures do not emit.
   - Reject reason: `rejectControl` uses `Validators.required` and `Validators.pattern(/\S/)`. Empty or spaces-only keeps Reject disabled. `reject()` returns without calling the API if the control is invalid.
+- Task 4
+  - Detail load states: loading / error / retry were already in the template; I added tests that pin them (same pattern as the list).
+  - I kept Approve visible but disabled for a viewer (the original test checks `.disabled`). Reject stays hidden.
+  - Selecting a list row now reloads detail: `ngOnChanges` on `id` calls `load()`.
+  - Switching “Acting as” clears `selectedId` so we do not keep CR-1 after changing org (that used to show Not found). After the new list loads, the shell selects the first row and opens its detail.
 
 ## 2. Component & state model
 <!-- The screens, the view-state each component exposes, and how data flows from the mock API into the
@@ -28,7 +33,8 @@ template. -->
 - The detail page uses the same loading/error idea, then shows line-item changes, a chronological timeline, and Approve/Reject.
 - Approve/Reject call the mock API. `submitting` disables the buttons while a call is in flight. Failures set `actionError` and do not clear the loaded CR.
 - After a successful action, detail emits `updated` so the list reloads from the same mock API store.
-- The selected row in the CR list still does not change the detail pane — it stays on the first loaded CR unless the panes are recreated (for example by switching user).
+- Changing the selected list row updates `[id]`; detail reloads that CR in `ngOnChanges`.
+- Switching user clears the selected CR so detail does not keep an id from another org, then selects the first row of the new list.
 - The layout is very tight: no real visual separator or enough space between the two views.
 
 ## 3. Invariants I keep
@@ -44,6 +50,8 @@ template. -->
 | Reject needs a non-blank reason | `rejectControl` validators; button `[disabled]` includes `rejectControl.invalid`; `reject()` returns if invalid |
 | A failed Approve/Reject must not wipe the loaded CR | `catch` sets `actionError` only; `state` stays `loaded` |
 | The list status must match the API after a successful action | `updated` emit → `list.load()` in `app.component.html` |
+| Changing the selected list row must show that CR’s detail | `ngOnChanges` on `id` in `cr-detail.component.ts` |
+| Switching user must show the first CR of the new org | `switchUser` sets `selectedId` to `null`; `onListLoaded` picks `rows[0]` |
 
 ## 4. Testing strategy
 <!-- What you tested (component/DOM vs pure) and why; what you deliberately skipped given the budget. -->
@@ -56,6 +64,8 @@ template. -->
 - Permissions: viewer sees data but Approve is disabled and Reject is hidden; approver gets both on a pending CR; draft/applied CRs get no actions.
 - Actions: success updates status and timeline; in-flight disables Approve; double-click calls the API once; `failNext` keeps the CR and shows `.cr-actions__error`; retry after failure works. No real delays — `flush()` and `failNext` only.
 - Validation: empty and whitespace-only reasons disable Reject and show the reason error after touch; `reject()` with an empty reason does not call the API.
+- Detail load states: loading before `flush`, error via `failNext`, retry after a failed load. Changing `id` after load shows the new CR.
+- Shell: switching user clears `selectedId`, then selects the first loaded CR and shows its detail. A later list reload (after Approve) keeps the current selection.
 
 ## 5. Assumptions
 <!-- Where the requirements left room for interpretation, the calls you made and why. -->
@@ -66,12 +76,12 @@ template. -->
 - I left Approve in the DOM (disabled) because the original test checks `.cr-actions__approve.disabled`. Reject is hidden because the template already used `*ngIf`.
 - Totals/delta come from the API CR fields; I did not recompute them from line items.
 - Reloading the list after success uses the existing `load()` (including its loading state), so the table can flash “Loading…” briefly.
+- Switching user clears the selected CR first (so another org never reuses CR-1), then auto-selects the first row after that org’s list loads. An empty org stays with no detail.
 
 ## 6. Where I used AI
 -
 
 ## 7. What I'd improve with more time
-- Reload detail when the selected list row changes (`ngOnChanges` on `id`).
 - A bit more space / a divider between the two panes (visual polish was out of scope).
 - Use `canApprovePolicy` so user/workspace approve scopes work, not only `cr_a_o`.
 - Refresh the list without flipping back through the loading state.
