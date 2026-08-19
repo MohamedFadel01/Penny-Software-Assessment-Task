@@ -7,14 +7,22 @@ import { ReqUser } from '../../models/cr.models';
 
 const flush = () => new Promise((r) => setTimeout(r, 0));
 
-async function render(user: ReqUser, id: string): Promise<ComponentFixture<CrDetailComponent>> {
+async function createDetail(user: ReqUser, id: string, options?: { failNext?: boolean }): Promise<ComponentFixture<CrDetailComponent>> {
 	TestBed.configureTestingModule({
 		imports: [CrDetailComponent],
 		providers: [{ provide: SessionService, useValue: { user } }],
 	});
 	await TestBed.compileComponents();
+	if (options?.failNext) {
+		TestBed.inject(CrApiService).failNext = true;
+	}
 	const fixture = TestBed.createComponent(CrDetailComponent);
 	fixture.componentInstance.id = id;
+	return fixture;
+}
+
+async function render(user: ReqUser, id: string): Promise<ComponentFixture<CrDetailComponent>> {
+	const fixture = await createDetail(user, id);
 	fixture.detectChanges(); // ngOnInit -> load()
 	await flush(); // let the mock API resolve
 	fixture.detectChanges(); // render the loaded state
@@ -51,6 +59,50 @@ describe('CrDetailComponent', () => {
 	it('loads and renders the change request title', async () => {
 		const fixture = await render(users.approver, 'CR-1');
 		expect(fixture.nativeElement.querySelector('.cr-detail__header h2').textContent).toContain('Add 1 unit of SKU-A');
+	});
+
+	it('shows loading before the detail resolves', async () => {
+		const fixture = await createDetail(users.approver, 'CR-1');
+		fixture.detectChanges();
+		expect(fixture.nativeElement.querySelector('.cr-detail__loading')).not.toBeNull();
+		expect(fixture.nativeElement.querySelector('.cr-detail__header')).toBeNull();
+		await flush();
+		fixture.detectChanges();
+		expect(fixture.nativeElement.querySelector('.cr-detail__loading')).toBeNull();
+		expect(fixture.nativeElement.querySelector('.cr-detail__header')).not.toBeNull();
+	});
+
+	it('shows an error when the detail request fails', async () => {
+		const fixture = await createDetail(users.approver, 'CR-1', { failNext: true });
+		fixture.detectChanges();
+		await flush();
+		fixture.detectChanges();
+		const error = fixture.nativeElement.querySelector('.cr-detail__error');
+		expect(error).not.toBeNull();
+		expect(error.textContent).toContain('Network error');
+		expect(fixture.nativeElement.querySelector('.cr-detail__header')).toBeNull();
+	});
+
+	it('retries after a failed detail request', async () => {
+		const fixture = await createDetail(users.approver, 'CR-1', { failNext: true });
+		fixture.detectChanges();
+		await flush();
+		fixture.detectChanges();
+		fixture.nativeElement.querySelector('.cr-detail__error button').click();
+		fixture.detectChanges();
+		expect(fixture.nativeElement.querySelector('.cr-detail__loading')).not.toBeNull();
+		await flush();
+		fixture.detectChanges();
+		expect(fixture.nativeElement.querySelector('.cr-detail__header h2').textContent).toContain('Add 1 unit of SKU-A');
+	});
+
+	it('reloads when the selected CR id changes', async () => {
+		const fixture = await render(users.approver, 'CR-1');
+		fixture.componentRef.setInput('id', 'CR-2');
+		fixture.detectChanges();
+		await flush();
+		fixture.detectChanges();
+		expect(fixture.nativeElement.querySelector('.cr-detail__header h2').textContent).toContain('Replace SKU-B supplier');
 	});
 
 	it('disables Approve for a read-only viewer on a pending CR', async () => {

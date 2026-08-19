@@ -3,7 +3,7 @@ import { CrListComponent } from './cr-list.component';
 import { SessionService } from '../../session/session.service';
 import { CrApiService } from '../../api/cr-api.service';
 import { users } from '../../api/fixtures';
-import { CrStatus, ReqUser } from '../../models/cr.models';
+import { CrStatus, CrSummary, ReqUser } from '../../models/cr.models';
 
 const flush = () => new Promise((r) => setTimeout(r, 0));
 
@@ -51,6 +51,35 @@ describe('CrListComponent', () => {
 	it('renders a row per change request in the user org', async () => {
 		const fixture = await render(users.approver);
 		expect(fixture.nativeElement.querySelectorAll('.cr-list__row').length).toBe(3); // org-alpha: CR-1, CR-2, CR-3
+	});
+
+	it('emits loaded with the org rows after a successful load', async () => {
+		const fixture = await createList(users.approver);
+		const loaded = jest.fn();
+		fixture.componentInstance.loaded.subscribe(loaded);
+		fixture.detectChanges();
+		await flush();
+		expect(loaded).toHaveBeenCalledTimes(1);
+		expect(loaded.mock.calls[0][0].map((row: CrSummary) => row.id)).toEqual(['CR-1', 'CR-2', 'CR-3']);
+	});
+
+	it('emits loaded with an empty array when the org has no change requests', async () => {
+		const fixture = await createList({ id: 'x', orgCode: 'org-empty', policies: ['cr_r_o'] });
+		const loaded = jest.fn();
+		fixture.componentInstance.loaded.subscribe(loaded);
+		fixture.detectChanges();
+		await flush();
+		expect(loaded).toHaveBeenCalledTimes(1);
+		expect(loaded.mock.calls[0][0]).toEqual([]);
+	});
+
+	it('does not emit loaded when the list request fails', async () => {
+		const fixture = await createList(users.approver, { failNext: true });
+		const loaded = jest.fn();
+		fixture.componentInstance.loaded.subscribe(loaded);
+		fixture.detectChanges();
+		await flush();
+		expect(loaded).not.toHaveBeenCalled();
 	});
 
 	it('shows the empty state when the org has no change requests', async () => {
