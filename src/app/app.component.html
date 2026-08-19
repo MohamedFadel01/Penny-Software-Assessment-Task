@@ -9,6 +9,6 @@
 </header>
 
 <main class="app-layout" *ngIf="show">
-	<app-cr-list #list (select)="onSelect($event)"></app-cr-list>
+	<app-cr-list #list (select)="onSelect($event)" (loaded)="onListLoaded($event)"></app-cr-list>
 	<app-cr-detail *ngIf="selectedId" [id]="selectedId" (updated)="list.load()"></app-cr-detail>
 </main>

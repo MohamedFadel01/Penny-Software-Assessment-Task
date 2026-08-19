@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CrApiService } from '../../api/cr-api.service';
@@ -19,7 +19,7 @@ import { formatMoney } from '../../common/money.util';
 	imports: [CommonModule, ReactiveFormsModule],
 	templateUrl: './cr-detail.component.html',
 })
-export class CrDetailComponent implements OnInit {
+export class CrDetailComponent implements OnInit, OnChanges {
 	@Input() id!: string;
 	@Output() updated = new EventEmitter<void>();
 
@@ -31,7 +31,15 @@ export class CrDetailComponent implements OnInit {
 	constructor(private readonly api: CrApiService, private readonly session: SessionService) {}
 
 	ngOnInit(): void {
-		void this.load();
+		if (this.state.status === 'idle') {
+			void this.load();
+		}
+	}
+
+	ngOnChanges(changes: SimpleChanges): void {
+		if (changes['id']?.currentValue) {
+			void this.load();
+		}
 	}
 
 	async load(): Promise<void> {

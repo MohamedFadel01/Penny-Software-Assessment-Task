@@ -18,6 +18,7 @@ import { idle, loading, ViewState } from '../../common/view-state';
 })
 export class CrListComponent implements OnInit {
 	@Output() select = new EventEmitter<string>();
+	@Output() loaded = new EventEmitter<CrSummary[]>();
 
 	state: ViewState<CrSummary[]> = idle();
 	statusFilter: CrStatus | 'ALL' = 'ALL';
@@ -43,6 +44,7 @@ export class CrListComponent implements OnInit {
 		try {
 			const rows = await this.api.listChangeRequests(this.session.user);
 			this.state = { status: rows.length ? 'loaded' : 'empty', data: rows };
+			this.loaded.emit(rows);
 		} catch (err) {
 			this.state = { status: 'error', data: null, error: (err as Error).message };
 		}

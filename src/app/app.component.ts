@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { CrListComponent } from '../components/cr-list/cr-list.component';
 import { CrDetailComponent } from '../components/cr-detail/cr-detail.component';
 import { SessionService } from '../session/session.service';
+import { CrSummary } from '../models/cr.models';
 import { users } from '../api/fixtures';
 
 /**
@@ -28,11 +29,18 @@ export class AppComponent {
 
 	switchUser(key: string): void {
 		this.session.user = users[key];
+		this.selectedId = null;
 		this.reload();
 	}
 
 	onSelect(id: string): void {
 		this.selectedId = id;
+	}
+
+	onListLoaded(rows: CrSummary[]): void {
+		if (this.selectedId === null && rows.length > 0) {
+			this.selectedId = rows[0].id;
+		}
 	}
 
 	/** Destroy + recreate the panes so they re-load as the newly selected user. */
